@@ -4,6 +4,8 @@
 
 > Budget-vs-actual analysis, year-end forecasting, and budget reallocation what-if modeling on Azure Databricks.
 
+https://github.com/user-attachments/assets/e50a1ab9-b22c-45d6-a9af-8236109ce7f1
+
 ## Overview
 
 Budget, forecast, and actual figures are spread across several plan versions (BP26, CF02, CF05, CF09), which makes it hard to see which departments and G/L accounts are at risk and where spending will land at year-end.

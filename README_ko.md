@@ -4,6 +4,8 @@
 
 > Azure Databricks 기반 예산·실적 분석, 연말 예측, 예산 재배분 What-if 모델링
 
+https://github.com/user-attachments/assets/e50a1ab9-b22c-45d6-a9af-8236109ce7f1
+
 ## 개요
 
 Budget, Forecast, Actual 데이터가 여러 Plan Version(BP26, CF02, CF05, CF09)에 흩어져 있어, 어떤 부서와 G/L 계정이 리스크인지, 연말에 집행이 어디로 갈지 파악하기 어렵습니다.
