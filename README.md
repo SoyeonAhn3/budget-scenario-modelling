@@ -26,7 +26,7 @@ This project consolidates the data into a Bronze → Silver → Gold → Semanti
 - [Overview](#overview)
 - [How It Works](#how-it-works)
 - [AI Components](#ai-components)
-- [Quick Start](#quick-start)
+- [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Documentation](#documentation)
 - [Current Status](#current-status)
@@ -179,24 +179,19 @@ Show the cumulative Actual vs Linear trend for the Marketing department under CF
 
 ![Genie Agent](screenshot/Genie_Agent_Screenshot.png)
 
-## Quick Start
+## Tech Stack
 
-### Prerequisites
-
-- Azure Databricks workspace with Unity Catalog (the notebooks were run on serverless compute)
-- Catalog `finance` with schemas `bronze`, `silver`, `gold`, `semantic`
-- Python libraries used by the notebooks: pandas, NumPy, scikit-learn
-- No environment variables or API keys; all inputs are read from Unity Catalog tables
-
-### Run order
-
-1. Load the CSV files in `sample_data/` as Bronze tables:
-   - `budget_analysis_2026.csv` → `finance.bronze.budget_analysis_2026_raw`
-   - `historical_actual_2021_2025_raw.csv` → `finance.bronze.historical_actual_2021_2025_raw`
-2. Build the Silver tables (`fact_actual_monthly_all`, `fact_plan_version`, `reporting_period`, dimensions). The Bronze → Silver transformation code is not included in this repository.
-3. Run `sql/historical_patterns.sql` in the Databricks SQL editor to create `finance.gold.finance_historical_patterns`.
-4. Run `sql/backtest.sql` for the department-level Simple vs. Seasonal EAC backtest.
-5. Import and run `notebook/Finance_ML_YearEnd_Forecast.ipynb` and `notebook/Finance_Budget_Scenario_Modeling.ipynb`.
+| Technology | Role | Why |
+|---|---|---|
+| Azure Databricks (serverless) | Data, BI, and AI workspace | Pipeline, dashboard, Genie, and notebooks in one workspace without cluster management |
+| Unity Catalog | Table namespace and governance | `finance.bronze / silver / gold / semantic` schemas separate each layer |
+| Spark SQL | Gold tables and backtest | Window functions compute YTD and full-year totals in plain, reviewable SQL |
+| PySpark | Notebook data preparation | Aggregates Gold data to department level before modeling |
+| Databricks Metric Views | Semantic layer | Measures are defined once and reused by the dashboard and Genie via `MEASURE()` |
+| Databricks AI/BI Dashboard | Current status and trend visuals | Reads metric views directly, no export to a separate BI tool |
+| Databricks Genie | Natural-language analysis | Answers are grounded in metric views and show the SQL they ran |
+| pandas, NumPy | Backtest calculations | Department-level data is small (44 rows per year) |
+| scikit-learn | ML forecast experiments | Standard Linear Regression and Gradient Boosting baselines to compare against rule-based methods |
 
 ## Project Structure
 

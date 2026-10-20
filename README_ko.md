@@ -26,7 +26,7 @@ Budget, Forecast, Actual 데이터가 여러 Plan Version(BP26, CF02, CF05, CF09
 - [개요](#개요)
 - [동작 흐름](#동작-흐름)
 - [AI 구성 요소](#ai-구성-요소)
-- [빠른 시작](#빠른-시작)
+- [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
 - [문서](#문서)
 - [현재 상태](#현재-상태)
@@ -179,24 +179,19 @@ Show the cumulative Actual vs Linear trend for the Marketing department under CF
 
 ![Genie Agent](screenshot/Genie_Agent_Screenshot.png)
 
-## 빠른 시작
+## 기술 스택
 
-### 사전 요구사항
-
-- Unity Catalog가 활성화된 Azure Databricks Workspace (Notebook은 Serverless Compute에서 실행)
-- `finance` Catalog와 `bronze`, `silver`, `gold`, `semantic` Schema
-- Notebook에서 사용하는 Python 라이브러리: pandas, NumPy, scikit-learn
-- 환경변수나 API Key는 필요 없음. 모든 입력은 Unity Catalog 테이블에서 읽음
-
-### 실행 순서
-
-1. `sample_data/`의 CSV 파일을 Bronze 테이블로 적재합니다.
-   - `budget_analysis_2026.csv` → `finance.bronze.budget_analysis_2026_raw`
-   - `historical_actual_2021_2025_raw.csv` → `finance.bronze.historical_actual_2021_2025_raw`
-2. Silver 테이블(`fact_actual_monthly_all`, `fact_plan_version`, `reporting_period`, Dimension)을 생성합니다. Bronze → Silver 변환 코드는 이 Repository에 포함되어 있지 않습니다.
-3. Databricks SQL Editor에서 `sql/historical_patterns.sql`을 실행해 `finance.gold.finance_historical_patterns`를 생성합니다.
-4. `sql/backtest.sql`을 실행해 부서별 Simple vs Seasonal EAC Backtest 결과를 확인합니다.
-5. `notebook/Finance_ML_YearEnd_Forecast.ipynb`와 `notebook/Finance_Budget_Scenario_Modeling.ipynb`를 Import해 실행합니다.
+| Technology | Role | Why |
+|---|---|---|
+| Azure Databricks (Serverless) | 데이터·BI·AI 작업 환경 | 클러스터 관리 없이 Pipeline, Dashboard, Genie, Notebook을 한 Workspace에서 운영 |
+| Unity Catalog | 테이블 Namespace와 거버넌스 | `finance.bronze / silver / gold / semantic` Schema로 Layer 구분 |
+| Spark SQL | Gold 테이블, Backtest | Window 함수로 YTD와 Full-Year를 검토하기 쉬운 SQL로 계산 |
+| PySpark | Notebook 데이터 준비 | 모델링 전에 Gold 데이터를 부서 단위로 집계 |
+| Databricks Metric Views | Semantic Layer | Measure를 한 번 정의하고 Dashboard와 Genie가 `MEASURE()`로 재사용 |
+| Databricks AI/BI Dashboard | 현재 상태·추세 시각화 | Metric View를 직접 읽어 별도 BI 도구로 내보낼 필요 없음 |
+| Databricks Genie | 자연어 분석 | Metric View 기반으로 답하고 실행한 SQL을 보여줌 |
+| pandas, NumPy | Backtest 계산 | 부서 단위 데이터가 작음 (연도당 44행) |
+| scikit-learn | ML 예측 실험 | 규칙 기반 방법과 비교할 표준 Linear Regression, Gradient Boosting Baseline |
 
 ## 프로젝트 구조
 
