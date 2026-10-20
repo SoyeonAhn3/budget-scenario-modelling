@@ -1,0 +1,25 @@
+# 시크릿/환경변수 (절대 커밋 금지)
+.env
+.env.*
+*.env
+api.env
+.claude/api.env
+
+# 컨설팅 실행 데이터
+logs/
+archive/
+output/
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 에디터
+.vscode/
+*.swp
+*.swo
+
+# 로컬 작업용 Skill (저장소에 올리지 않음)
+readme-gen/
+github-push/
