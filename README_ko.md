@@ -26,7 +26,6 @@ Budget, Forecast, Actual 데이터가 여러 Plan Version(BP26, CF02, CF05, CF09
 - [개요](#개요)
 - [동작 흐름](#동작-흐름)
 - [AI 구성 요소](#ai-구성-요소)
-- [기술 스택](#기술-스택)
 - [빠른 시작](#빠른-시작)
 - [프로젝트 구조](#프로젝트-구조)
 - [문서](#문서)
@@ -96,6 +95,12 @@ Historical YTD Share = (YTD at cutoff month ÷ Full-Year Actual) in past years
 
 <sub>Linear Regression은 2021 ~ 2024로 학습했습니다. 나머지 ML 모델은 과거 이력 Feature가 필요해 2022 ~ 2024로 학습했고, 같은 기간으로 학습한 기본 Linear Regression의 MAPE는 0.76%입니다.</sub>
 
+**ML 실험**: 같은 Backtest에서 Linear Regression과 Gradient Boosting 모델을 별도 실험으로 비교했습니다. Seasonal EAC를 넘은 모델이 없어 Scenario 모델은 Seasonal EAC를 사용하며, ML 모델은 프로젝트의 다른 곳에 쓰이지 않습니다.
+
+- Full-Year 금액을 예측한 Gradient Boosting은 Feature Importance의 99%가 `ytd_actual`에 집중됐습니다. 집행 패턴이 아니라 부서 규모를 학습한 것입니다.
+- Target을 Remaining Rate `(Full-Year − YTD) ÷ YTD`로 바꾸자 오차가 2.57% → 0.78%로 줄었고, 가장 중요한 Feature는 최근 3개월 Momentum(0.83)이었습니다.
+- Linear Regression에 Seasonality Feature를 추가하거나(0.76% → 1.10%), Seasonal EAC의 잔차를 모델링하면(0.32% → 0.91%) 모두 오히려 악화됐습니다.
+
 **예측 시점별**: 모든 시점과 테스트 연도에서 Seasonal EAC가 Simple Annualization보다 정확했습니다.
 
 | Cutoff | 2024 Simple | 2024 Seasonal | 2025 Simple | 2025 Seasonal |
@@ -111,6 +116,8 @@ Historical YTD Share = (YTD at cutoff month ÷ Full-Year Actual) in past years
 | 마케팅팀 3 | 강한 계절성 | 13.87% | **1.46%** |
 | 정보기술팀 2 | Trend / Level Shift | **0.51%** | 2.26% |
 | 연구개발팀 3 | Project Milestone | 6.78% | 7.58% |
+
+모든 부서에서 이기는 방법이 없기 때문에, 향후 부서별 Method Selector를 위한 원칙을 정했습니다. 부서명 기준 하드코딩 금지, 예측 시점 이전 데이터만 사용, 최종 Test Year는 선택 규칙 생성에 사용하지 않음.
 
 ### 4. 예산 재배분 What-if
 
@@ -138,55 +145,39 @@ Scenario 입력: 전사 총액은 유지한 채 재무회계팀 4(Source)에서 
 
 ## AI 구성 요소
 
+이 프로젝트의 AI 구성 요소는 두 Metric View 위에 만든 Genie Space **Finance Budget and Cost Analysis** 하나입니다.
+
 ### AI가 처리하는 부분
 
-| 구성 요소 | 입력 | 출력 |
-|---|---|---|
-| Genie Space "Finance Budget and Cost Analysis" | 자연어 질문 | 두 Metric View에 대한 SQL, 결과 표 또는 차트, 짧은 설명 |
-| ML 예측 모델 (실험) | YTD Actual, 최근 3개월 평균, Cutoff 월 Actual, Momentum 비율, 과거 YTD Share | Full-Year Actual 또는 Remaining Rate |
+| 입력 | 출력 |
+|---|---|
+| 자연어 질문 | 두 Metric View에 대한 SQL, 결과 표 또는 차트, 짧은 설명 |
+
+질문 범위: Current Budget / Actual 비교, Linear Overrun / Under-run, 부서·G/L Ranking, Budget 없는 Actual, 월별 Trend, 최근 연속 Overrun 탐색
 
 ### 규칙 기반 처리
 
-- 모든 KPI(Actual YTD, Linear, Variance, Utilization, Remaining Budget)는 Metric View Measure로 한 번만 정의하고 Dashboard와 Genie가 함께 사용합니다.
-- Simple Annualization과 Seasonal EAC는 정해진 계산식입니다.
-- 재배분, Forecast Gap, Status 분류는 규칙 기반입니다.
+- 모든 수치는 Metric View Measure(Actual YTD, Linear, Variance, Utilization, Remaining Budget)가 계산합니다. Measure는 한 번만 정의되어 Dashboard와 공유됩니다. Genie는 쿼리를 작성할 뿐 수치를 직접 계산하지 않습니다.
 
 ### 모델 선택 방식
 
-ML 모델은 규칙 기반 방법과 같은 2025 Backtest로 평가했습니다. Seasonal EAC를 넘은 모델이 없어 Scenario 모델은 Seasonal EAC를 사용합니다.
-
-- Full-Year 금액을 예측한 Gradient Boosting은 Feature Importance의 99%가 `ytd_actual`에 집중됐습니다. 집행 패턴이 아니라 부서 규모를 학습한 것입니다.
-- Target을 Remaining Rate `(Full-Year − YTD) ÷ YTD`로 바꾸자 오차가 2.57% → 0.78%로 줄었고, 가장 중요한 Feature는 최근 3개월 Momentum(0.83)이었습니다.
-- Linear Regression에 Seasonality Feature를 추가하거나(0.76% → 1.10%), Seasonal EAC의 잔차를 모델링하면(0.32% → 0.91%) 모두 오히려 악화됐습니다.
-
-부서별 Method Selector를 위해 정한 원칙: 부서명 기준 하드코딩 금지, 예측 시점 이전 데이터만 사용, 최종 Test Year는 선택 규칙 생성에 사용하지 않음.
+- Genie는 Databricks가 관리하는 LLM으로 동작해 따로 고를 모델이 없습니다. 대신 데이터 Source(두 Metric View), Space 지침, 예시 SQL 쿼리로 답변을 통제합니다.
 
 ### AI 실패 처리 방식
 
-- Genie는 Metric View Measure로 답하므로, 수치는 모델이 생성하는 것이 아니라 검증된 정의에서 나옵니다.
 - Space 지침으로 데이터에 없는 Business Cause를 추론하지 않고, Positive Variance vs Linear를 연간 Budget 초과로 표현하지 않도록 했습니다.
-- 모든 답변에서 생성된 SQL을 확인할 수 있고, Space에 예시 SQL 쿼리를 등록해 두었습니다.
+- 모든 답변에서 생성된 SQL을 보여주므로 쿼리를 직접 확인할 수 있습니다.
+- 자주 쓰는 질문은 Space에 예시 SQL 쿼리로 등록해 참고하도록 했습니다.
 
 ### AI 결과의 성격
 
 - Genie는 탐색 도구입니다. 설명은 참고용이며 예산 의사결정은 Finance 사용자가 합니다.
-- ML 결과는 실험적 비교이며 최종 예측과 Scenario에는 사용하지 않습니다.
+
+```text
+Show the cumulative Actual vs Linear trend for the Marketing department under CF05.
+```
 
 ![Genie Agent](screenshot/Genie_Agent_Screenshot.png)
-
-## 기술 스택
-
-| Technology | Role | Why |
-|---|---|---|
-| Azure Databricks (Serverless) | 데이터·BI·AI 작업 환경 | 클러스터 관리 없이 Pipeline, Dashboard, Genie, Notebook을 한 Workspace에서 운영 |
-| Unity Catalog | 테이블 Namespace와 거버넌스 | `finance.bronze / silver / gold / semantic` Schema로 Layer 구분 |
-| Spark SQL | Gold 테이블, Backtest | Window 함수로 YTD와 Full-Year를 검토하기 쉬운 SQL로 계산 |
-| PySpark | Notebook 데이터 준비 | 모델링 전에 Gold 데이터를 부서 단위로 집계 |
-| Databricks Metric Views | Semantic Layer | Measure를 한 번 정의하고 Dashboard와 Genie가 `MEASURE()`로 재사용 |
-| Databricks AI/BI Dashboard | 현재 상태·추세 시각화 | Metric View를 직접 읽어 별도 BI 도구로 내보낼 필요 없음 |
-| Databricks Genie | 자연어 분석 | Metric View 기반으로 답하고 실행한 SQL을 보여줌 |
-| pandas, NumPy | Backtest 계산 | 부서 단위 데이터가 작음 (연도당 44행) |
-| scikit-learn | ML 예측 실험 | 규칙 기반 방법과 비교할 표준 Linear Regression, Gradient Boosting Baseline |
 
 ## 빠른 시작
 
