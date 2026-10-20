@@ -36,19 +36,7 @@ Budget, Forecast, Actual 데이터가 여러 Plan Version(BP26, CF02, CF05, CF09
 
 ## 동작 흐름
 
-```text
-Excel source data (2026 budget/actual, 2021–2025 historical actual)
-        ↓
-Bronze → Silver → Gold          (Unity Catalog: finance.bronze / silver / gold)
-        ↓
-Semantic metric views           (finance.semantic)
-        ↓
-AI/BI Dashboard + Genie         (current status, monthly trend)
-        ↓
-Year-end forecast & backtest    (SQL + notebook)
-        ↓
-Budget reallocation what-if     (notebook)
-```
+![아키텍처 다이어그램](screenshot/Architecture_Diagram.png)
 
 ### 1. 데이터 기반
 
@@ -210,7 +198,7 @@ Show the cumulative Actual vs Linear trend for the Marketing department under CF
 ├── sample_data/
 │   ├── budget_analysis_2026.csv                 # 2026 budget, plan versions, monthly actual (813 rows)
 │   └── historical_actual_2021_2025_raw.csv      # 2021–2025 monthly actual (48,780 rows)
-├── screenshot/                                  # Dashboard, Genie, and scenario screenshots
+├── screenshot/                                  # Architecture diagram; dashboard, Genie, and scenario screenshots
 └── plan/
     └── finance_budget_decision_support_project_plan_updated.md   # Detailed project plan (Korean)
 ```
